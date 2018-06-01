@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Camera2DetectorActivity">
+
+    <TextureView
+        android:id="@+id/textureView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true" />
+
+    <ImageButton
+        android:id="@+id/constant_det_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="15dp"
+        android:layout_marginEnd="15dp"
+        android:background="@null"
+        android:scaleX="2"
+        android:scaleY="2"
+        android:contentDescription="@string/constantDetOffButton"
+        app:srcCompat="@drawable/btn_constant_det_off" />
+
+    <ImageButton
+        android:id="@+id/photo_det"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignTop="@+id/constant_det_off"
+        android:layout_marginStart="15dp"
+        android:background="@null"
+        android:scaleX="2"
+        android:scaleY="2"
+        android:contentDescription="@string/photoDetButton"
+        app:srcCompat="@drawable/btn_photo_det" />
+
+    <TextView
+        android:id="@+id/textViewPrevRes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:contentDescription="@string/textViewPrevRes"
+        android:textColor="@android:color/holo_red_dark"
+        android:textStyle="italic"
+        tools:shadowColor="@android:color/darker_gray"
+        tools:textColor="@android:color/black" />
+
+    <ImageButton
+        android:id="@+id/settingsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="15dp"
+        android:layout_marginEnd="15dp"
+        android:background="@null"
+        android:scaleX="2"
+        android:scaleY="2"
+        android:contentDescription="@string/settingsButton"
+        app:srcCompat="@drawable/btn_settings" />
+
+</RelativeLayout>

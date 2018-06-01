@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AndroidProject</string>
+    <string name="constantDetOffButton">Constant detecting off button</string>
+    <string name="photoDetButton">Take still image to detect button</string>
+    <string name="textViewPrevRes">Prints chosen preview resolution</string>
+    <string name="settingsButton">Runs popup menu</string>
+</resources>

@@ -3,6 +3,8 @@ package pl.agh.roadsigns.camera2detector;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Paint;
 import android.graphics.SurfaceTexture;
@@ -17,10 +19,12 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -39,6 +43,7 @@ import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -52,6 +57,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import imgProcessing.activity.ProceedImg;
+import imgProcessing.config.Config;
 
 public class Camera2DetectorActivity extends AppCompatActivity {
 
@@ -60,14 +69,23 @@ public class Camera2DetectorActivity extends AppCompatActivity {
     private  static final int STATE_PREVIEW = 0;
     private  static final int STATE_WAIT_LOCK = 1;
     private int mCaptureState = STATE_PREVIEW;
+    private TextToSpeech toSpeech;
+    private MediaPlayer circleDetectedSoun;
+    private MediaPlayer redAreaDetectedSoun;
+    private int langTextToSpeechResult;
     private TextView mTextViewPrevRes;
     private ImageButton btnSettings;
     private ImageButton btnShotPhoto;
+    private ImageButton btnDetector;
     private static List<Size> previewResolutions = new ArrayList<Size>();
+    private static boolean isAcitve = false;
+    private static boolean isDetectorActive = false;
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListeenr = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+
+            toSpeech.speak("My TextureVIew is available with resolution " + width + " width and " + height +" height", TextToSpeech.QUEUE_ADD,null,null);
             Toast.makeText(getApplicationContext(), "TextureVIew is available width:" + width + " height:" + height, Toast.LENGTH_LONG).show();
             setupCamera(width, height);
             connectToCamera();
@@ -84,6 +102,8 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         }
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+            if((!isAcitve)&&(isDetectorActive))
+                lockFocus();
 
         }
 
@@ -113,53 +133,72 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         }
     };
 
-    private HandlerThread mBackgroundHandlerThread;
-    private Handler mBackgroundHandler;
+    private HandlerThread mBackgroundHandlerThreadFirst;
+
+    private Handler mBackgroundHandlerFirst;
+
     private String mCameraID;
     private Size mPreviewSize;
 
+    private int starts = 1;
+
     private Size mImageSize;
     private ImageReader mImageReade;
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener1 = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.post(new ImageSaver(reader.acquireLatestImage()));
+            starts++;
+
+            if(((starts%2)==0)&&(!isAcitve)) {
+                mBackgroundHandlerFirst.post(new ImageSaver(1, reader.acquireLatestImage()));
+            }
+
+
+
         }
     };
 
     private class ImageSaver implements Runnable{
 
         private final Image mImage;
+        private  int id;
 
-        public ImageSaver(Image image) {
+        public ImageSaver(int id, Image image) {
             mImage = image;
+            this.id = id;
         }
 
         @Override
         public void run() {
-            ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[byteBuffer.remaining()];
-            byteBuffer.get(bytes);
+            System.out.println("Action");
 
-            FileOutputStream fileOutputStream = null;
-            try {
-                fileOutputStream = new FileOutputStream(mImageFileName);
-                fileOutputStream.write(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }finally {
-                mImage.close();
-                if(fileOutputStream != null){
-                    try {
-                        fileOutputStream.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            isAcitve = true;
+            if(mImage!=null){
+                ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
+
+                byte[] bytes = new byte[byteBuffer.remaining()];
+
+                byteBuffer.get(bytes);
+
+                ArrayList<String> detected = ProceedImg.detectSigns(bytes, getApplicationContext(), mImageFolder, toSpeech, circleDetectedSoun, redAreaDetectedSoun);
+/*
+                if(detected.size()==0){
+                    toSpeech.speak("I'm still looking for signs!", TextToSpeech.QUEUE_ADD,null,null);
+                }*/
+
+                for(String s : detected){
+                    toSpeech.speak("I detected and found "+ s+" speed limit", TextToSpeech.QUEUE_ADD,null,null);
+                    Toast.makeText(getApplicationContext(),"Detecting Signs: I found "+ s + " speed limit", Toast.LENGTH_SHORT).show();
                 }
+                mImage.close();
+                isAcitve = false;
             }
+            isAcitve = false;
+
 
         }
     }
+    private int mTotalRotation;
     private CameraCaptureSession mPreviewCaptureSession;
     private CameraCaptureSession.CaptureCallback mPreviewCaptureCallback = new CameraCaptureSession.CaptureCallback() {
         private  void process(CaptureResult captureResult){
@@ -172,7 +211,8 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                     Integer afState = captureResult.get(CaptureResult.CONTROL_AF_STATE);
                     if((afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED)||(afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED)){
 
-                        Toast.makeText(getApplicationContext(),"AutoFocus is locked", Toast.LENGTH_LONG).show();
+                        //toSpeech.speak("AutoFocus locked!", TextToSpeech.QUEUE_ADD,null,null);
+                        //Toast.makeText(getApplicationContext(),"AutoFocus is locked", Toast.LENGTH_SHORT).show();
                         startStillCaptureREquest();
                     }
                     break;
@@ -182,7 +222,6 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         @Override
         public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-
             process(result);
         }
     };
@@ -216,6 +255,22 @@ public class Camera2DetectorActivity extends AppCompatActivity {
 
         this.createImageFolder();
 
+        Config.prepare(getApplicationContext().getResources());
+
+        this.circleDetectedSoun = MediaPlayer.create(this,R.raw.bleep);
+        this.redAreaDetectedSoun = MediaPlayer.create(this, R.raw.circle_detected);
+
+        this.toSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if(status == TextToSpeech.SUCCESS){
+                    langTextToSpeechResult = toSpeech.setLanguage(Locale.ENGLISH);
+                }else{
+                    Toast.makeText(getApplicationContext(),"Text to Speech not supported", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         this.mTextureView = (TextureView) findViewById(R.id.textureView);
 
         this.mTextViewPrevRes = (TextView) findViewById(R.id.textViewPrevRes);
@@ -237,6 +292,7 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem item) {
                         if(item.toString().contains("x")){ //prev res options
                             String[] measures = item.toString().split("x");
+
                             mPreviewSize = new Size(Integer.parseInt(measures[0]), Integer.parseInt(measures[1]));
                             startPreview();
                             mTextViewPrevRes.setText("preview resolution: "+ mPreviewSize);
@@ -258,6 +314,20 @@ public class Camera2DetectorActivity extends AppCompatActivity {
             public void onClick(View v) {
                 checkWriteStoragePermission();
                 lockFocus();
+            }
+        });
+
+        this.btnDetector = (ImageButton) findViewById(R.id.constant_det_off);
+        this.btnDetector.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if(isDetectorActive) {
+                    toSpeech.speak("Detector was deactivated", TextToSpeech.QUEUE_ADD, null, null);
+                }else {
+                    toSpeech.speak("Detector was activated, I'm looking for signs", TextToSpeech.QUEUE_ADD, null, null);
+                }
+                isDetectorActive = !isDetectorActive;
             }
         });
     }
@@ -309,18 +379,21 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                 //checking if we are in portrait (or landscape) mode to switch height with width
                 int deviceOreintation = getWindowManager().getDefaultDisplay().getRotation();
-                int totalRotation = sensorToDEviceRotations(cameraCharacteristics, deviceOreintation);
-                boolean swapRotation = totalRotation == 90 || totalRotation == 270;
+                mTotalRotation  = sensorToDEviceRotations(cameraCharacteristics, deviceOreintation);
+                boolean swapRotation = mTotalRotation == 90 || mTotalRotation == 270;
                 int rotatedWidth = width;
                 int rotatedHeight = height;
                 if (swapRotation) {
                     rotatedWidth = height;
                     rotatedHeight = width;
                 }
+
                 this.mPreviewSize = chooseOoptimalSize(map.getOutputSizes(SurfaceTexture.class), rotatedWidth, rotatedHeight);
-                this.mImageSize = chooseOoptimalSize(map.getOutputSizes(ImageFormat.YUV_420_888), rotatedWidth, rotatedHeight);
-                this.mImageReade = ImageReader.newInstance(this.mImageSize.getWidth(), this.mImageSize.getHeight(), ImageFormat.YUV_420_888, 1);
-                this.mImageReade.setOnImageAvailableListener(this.mOnImageAvailableListener, mBackgroundHandler);
+                this.mImageSize = chooseOoptimalSize(map.getOutputSizes(ImageFormat.JPEG), rotatedWidth, rotatedHeight);
+                this.mImageReade = ImageReader.newInstance(this.mImageSize.getWidth(), this.mImageSize.getHeight(), ImageFormat.JPEG, 2);
+                this.mImageReade.setOnImageAvailableListener(this.mOnImageAvailableListener1, mBackgroundHandlerFirst);
+               // this.mImageReade.setOnImageAvailableListener(this.mOnImageAvailableListener2, mBackgroundHandlerSecond);
+
 
                 this.mTextViewPrevRes.setText("preview resolution: "+ this.mPreviewSize);
                 this.mCameraID = cameraId;
@@ -336,7 +409,7 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         try {
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){  //if greater or equal to marshmallow
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
-                    cameraManager.openCamera(this.mCameraID, this.mCameraDeviceStateCallback, this.mBackgroundHandler);
+                    cameraManager.openCamera(this.mCameraID, this.mCameraDeviceStateCallback, this.mBackgroundHandlerFirst);
                 }else{
                     if(shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)){
                         Toast.makeText(this, "Our app requires access to camera", Toast.LENGTH_SHORT).show();
@@ -344,7 +417,7 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                     requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION_RESULT);
                 }
             }else{
-                cameraManager.openCamera(this.mCameraID, this.mCameraDeviceStateCallback, this.mBackgroundHandler);
+                cameraManager.openCamera(this.mCameraID, this.mCameraDeviceStateCallback, this.mBackgroundHandlerFirst);
             }
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -366,7 +439,7 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     mPreviewCaptureSession = session;
                     try {
-                        mPreviewCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mBackgroundHandler); //callback to processing data?
+                        mPreviewCaptureSession.setRepeatingRequest(mCaptureRequestBuilder.build(), null, mBackgroundHandlerFirst); //callback to processing data?
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
@@ -386,17 +459,17 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         try {
             this.mCaptureRequestBuilder = this.mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             this.mCaptureRequestBuilder.addTarget((this.mImageReade.getSurface()));
-            //this.mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, mR)
+            this.mCaptureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, mTotalRotation);
             CameraCaptureSession.CaptureCallback stillCaptureCallback = new CameraCaptureSession.CaptureCallback() {
                 @Override
                 public void onCaptureStarted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, long timestamp, long frameNumber) {
                     super.onCaptureStarted(session, request, timestamp, frameNumber);
+                    /*
                     try {
-                        checkWriteStoragePermission();
                         createImageFileName();
                     } catch (IOException e) {
                         e.printStackTrace();
-                    }
+                    }*/
                 }
             };
             this.mPreviewCaptureSession.capture(mCaptureRequestBuilder.build(), stillCaptureCallback,null);
@@ -413,7 +486,6 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),  "Application needs camera services!", Toast.LENGTH_SHORT).show();
             }
         }
-       // if(requestCode )
     }
 
     //free camera resources
@@ -425,17 +497,18 @@ public class Camera2DetectorActivity extends AppCompatActivity {
     }
     //setting up background thread
     private void startBackgroundThread(){
-        this.mBackgroundHandlerThread = new HandlerThread("AndroidProject");
-        this.mBackgroundHandlerThread.start();
-        mBackgroundHandler = new Handler(this.mBackgroundHandlerThread.getLooper());
+        this.mBackgroundHandlerThreadFirst = new HandlerThread("AndroidProject1");
+        this.mBackgroundHandlerThreadFirst.start();
+        mBackgroundHandlerFirst = new Handler(this.mBackgroundHandlerThreadFirst.getLooper());
     }
 
     private void stopBackgroundThread(){
-        this.mBackgroundHandlerThread.quitSafely();
+
+        this.mBackgroundHandlerThreadFirst.quitSafely();
         try {
-            this.mBackgroundHandlerThread.join();
-            this.mBackgroundHandlerThread = null;
-            this.mBackgroundHandler = null;
+            this.mBackgroundHandlerThreadFirst.join();
+            this.mBackgroundHandlerThreadFirst = null;
+            this.mBackgroundHandlerFirst = null;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -450,24 +523,29 @@ public class Camera2DetectorActivity extends AppCompatActivity {
     private static Size chooseOoptimalSize(Size[] choices, int width, int height){
         List<Size> bigEnough = new ArrayList<Size>();
         //traverse through resolutions
-        for(Size option : choices){
+        for(Size option : choices) {
             previewResolutions.add(option);
-            if((option.getHeight() == option.getWidth() * height / width) && option.getWidth() >= width && option.getHeight() >= height){
-                bigEnough.add(option);
-            }
+            //if((option.getHeight() == option.getWidth() * height / width) && option.getWidth() >= width && option.getHeight() >= height){
+            bigEnough.add(option);
+            if(option.getWidth() == 720)
+                return option;
         }
+        return choices[0];
+//        }
+        /*
         if(bigEnough.size() > 0){
             return Collections.min(bigEnough, new CompareSizeByArea());
         }else{
             return choices[0];
-        }
+        }*/
     }
 
     private void lockFocus(){
+
         this.mCaptureState = STATE_WAIT_LOCK;
         this.mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CaptureRequest.CONTROL_AF_TRIGGER_START);
         try {
-            this.mPreviewCaptureSession.capture(this.mCaptureRequestBuilder.build(), mPreviewCaptureCallback, this.mBackgroundHandler);
+            this.mPreviewCaptureSession.capture(this.mCaptureRequestBuilder.build(), mPreviewCaptureCallback, this.mBackgroundHandlerFirst);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }

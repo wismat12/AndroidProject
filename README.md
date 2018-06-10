@@ -1,96 +1,96 @@
 # AndroidProject 
 ## Road Sign Speed Limit Detector - Android app 
 
-  * Aplikacja nie uÅ¼ywa gotowych bibliotek typu OpenCV, korzysta z czystego Camera2 API Androida.
+  * Aplikacja nie u¿ywa gotowych bibliotek typu OpenCV, korzysta z czystego Camera2 API Androida.
 
-  * Aplikacja pozwala na wykrycie znakÃ³w drogowych ograniczajÄ…cych prÄ™dkoÅ›Ä‡ z dowolnymi liczbami w Å›rodku (do 3).
+  * Aplikacja pozwala na wykrycie znaków drogowych ograniczaj¹cych prêdkoœæ z dowolnymi liczbami w œrodku (do 3).
 
-  * Opiera siÄ™ na 8 wÄ…tkach dokonujÄ…cych obliczeÅ„ na androidowej bitmapie.
+  * Opiera siê na 8 w¹tkach dokonuj¹cych obliczeñ na androidowej bitmapie.
 
-  * MoÅ¼na teÅ¼ wyrÃ³Å¼niÄ‡ mniejsze zadania jak liczenie histogramÃ³w dla przestrzeni czerwonych - na 2 wÄ…tkach.
+  * Mo¿na te¿ wyró¿niæ mniejsze zadania jak liczenie histogramów dla przestrzeni czerwonych - na 2 w¹tkach.
 
-  * Osobny wÄ…tek dokonuje zapisu plikÃ³w.
+  * Osobny w¹tek dokonuje zapisu plików.
 
-  * Aplikacja posiada dostÄ™p do podglÄ…du kamery, w odpowiednim momencie wÄ…tek odpowiedzialny tylko za rozpoczynanie i koordynowanie postÄ™pu obliczeÅ„, zostaje uruchomiony, pobiera ostatni bufor obrazu z Listenera Image Reader.
+  * Aplikacja posiada dostêp do podgl¹du kamery, w odpowiednim momencie w¹tek odpowiedzialny tylko za rozpoczynanie i koordynowanie postêpu obliczeñ, zostaje uruchomiony, pobiera ostatni bufor obrazu z Listenera Image Reader.
 
-  * UÅ¼ytkownik moÅ¼e zrobiÄ‡ zdjÄ™cie na Å¼yczenie i sprawdziÄ‡ je pod kÄ…tem obecnoÅ›ci znakÃ³w lub teÅ¼ aktywowaÄ‡ detektor, ktÃ³ry caÅ‚y czas bÄ™dzie pracowaÄ‡ i informowaÄ‡ nas o postÄ™pach. Zachowano real time z przymroÅ¼eniem oka.
+  * U¿ytkownik mo¿e zrobiæ zdjêcie na ¿yczenie i sprawdziæ je pod k¹tem obecnoœci znaków lub te¿ aktywowaæ detektor, który ca³y czas bêdzie pracowaæ i informowaæ nas o postêpach. Zachowano real time z przymro¿eniem oka.
 
-  * UÅ¼ytkownik moÅ¼e zmieniÄ‡ rozdzielczoÅ›Ä‡ podglÄ…du.
+  * U¿ytkownik mo¿e zmieniæ rozdzielczoœæ podgl¹du.
 
-  * Aplikacja informuje nas odpowiednimi dÅºwiÄ™kowymi powiadomieniami o zaistniaÅ‚ych rezultatach.
+  * Aplikacja informuje nas odpowiednimi dŸwiêkowymi powiadomieniami o zaistnia³ych rezultatach.
 
-  * Aplikacja korzysta z textToSpeech dla gÅ‚osowych powiadomieÅ„ w jÄ™zyku angielskim.
+  * Aplikacja korzysta z textToSpeech dla g³osowych powiadomieñ w jêzyku angielskim.
 
-  * Aplikacja pobiera lokalizacjÄ™ GPS uÅ¼ytkownika.
+  * Aplikacja pobiera lokalizacjê GPS u¿ytkownika.
 
-  * Aplikacja korzysta z api restowego google do geokodowania koordynatÃ³w na bieÅ¼Ä…cy dokÅ‚adny adres - ulica, kod, miasto, kraj.
+  * Aplikacja korzysta z api restowego google do geokodowania koordynatów na bie¿¹cy dok³adny adres - ulica, kod, miasto, kraj.
 
-  * Request do api zostaje wysÅ‚any tylko na poczÄ…tku i przy kaÅ¼dorazowym wykryciu znaku, nie wystÄ™puje niepotrzebna transmisja danych w tle
+  * Request do api zostaje wys³any tylko na pocz¹tku i przy ka¿dorazowym wykryciu znaku, nie wystêpuje niepotrzebna transmisja danych w tle
 
-  * Aplikacja pyta o dostÄ™p do kamery, pamiÄ™ci wewnÄ™trznej, internetu, lokalizacji uÅ¼ytkownika.
+  * Aplikacja pyta o dostêp do kamery, pamiêci wewnêtrznej, internetu, lokalizacji u¿ytkownika.
 
-### KrÃ³tki opis dziaÅ‚ania algorytmu 
+### Krótki opis dzia³ania algorytmu 
   - Opcjonalne skalowanie
-  - Binaryzaja w przestrzeni HSV w celu wykrycia czerwonego koloru - dziaÅ‚ajaca na 8 wÄ…tkach
-  - Wykrywanie areas - czerwonych obiektÃ³w na bitmapie i zczytywanie ich pozycji - jeÅ›li czerwony kolor zostanie zauwaÅ¼ony, aplikacja poinformuje nas pikajÄ…cym powiadomieniem dÅºwiÄ™kowym
-  - Przygotowywanie histogramÃ³w czerwonych pixeli przez 8 wÄ…tkÃ³w
-  - Tworzenie linii - przez 2 wÄ…tki
-  - i prostokÄ…tÃ³w - nie ma potrzeby angaÅ¼owania wiÄ™cej niÅ¼ 1 wÄ…tku 
-  - Przycinanie ÅºrÃ³dÅ‚owych zdjÄ™Ä‡ po binaryzacji i ich kopii rgb do wczeÅ›niej wykrytych przestrzeni - operacja przyciÄ™cia bitmapy dziaÅ‚a na 8 wÄ…tkach
-  - Wykrywanie krawÄ™dzi czerwonych obiektÃ³w - filtr gÃ³rnoprzepustowy Laplasjanu - jako wynik white/black krawÄ™dzie - dziaÅ‚a na 8 wÄ…tkach
-  - Wyszukiwanie okrÄ™gÃ³w - jeÅ›li punkt naleÅ¼y do okrÄ™gu, aplikacja poinformuje nas punktowym dÅºwiÄ™kiem - napisane na 1 wÄ…tku 
-  - Zaznaczanie okrÄ™gÃ³w posÄ…dzonych o znak na wynikowym img, ramce
-  - Przycinanie kaÅ¼dego okrÄ™gu do wewnÄ™trznych - potrzebujemy tylko tych wewnÄ™trznych
+  - Binaryzaja w przestrzeni HSV w celu wykrycia czerwonego koloru - dzia³ajaca na 8 w¹tkach
+  - Wykrywanie areas - czerwonych obiektów na bitmapie i zczytywanie ich pozycji - jeœli czerwony kolor zostanie zauwa¿ony, aplikacja poinformuje nas pikaj¹cym powiadomieniem dŸwiêkowym
+  - Przygotowywanie histogramów czerwonych pixeli przez 8 w¹tków
+  - Tworzenie linii - przez 2 w¹tki
+  - i prostok¹tów - nie ma potrzeby anga¿owania wiêcej ni¿ 1 w¹tku 
+  - Przycinanie Ÿród³owych zdjêæ po binaryzacji i ich kopii rgb do wczeœniej wykrytych przestrzeni - operacja przyciêcia bitmapy dzia³a na 8 w¹tkach
+  - Wykrywanie krawêdzi czerwonych obiektów - filtr górnoprzepustowy Laplasjanu - jako wynik white/black krawêdzie - dzia³a na 8 w¹tkach
+  - Wyszukiwanie okrêgów - jeœli punkt nale¿y do okrêgu, aplikacja poinformuje nas punktowym dŸwiêkiem - napisane na 1 w¹tku 
+  - Zaznaczanie okrêgów pos¹dzonych o znak na wynikowym img, ramce
+  - Przycinanie ka¿dego okrêgu do wewnêtrznych - potrzebujemy tylko tych wewnêtrznych
   - Przygotowywanie przestrzeni z czarnymi liczbami
-  - Przycinanie obrazÃ³w rgb do tych samych koordynatÃ³w
-  - Binaryzacja koloru czarnego na wewnÄ™trznych okrÄ™gach 
-  - Czyszczenie czarnych pixeli na krawÄ™dziach 
-  - Wykrywanie przestrzeni z tylko jednÄ… liczbÄ… - dÄ…Å¼ymy do uzyskania tylko 1 liczby na przestrzeÅ„ 
-  - PorÃ³wnywanie znalezionej liczby w bazie wzorcÃ³w
-  - JeÅ›li liczba zostanie znaleziona, zwrÃ³cone zostaje ograniczenie jako string
-  - WÄ…tek zapisujÄ…cy rezultat powiadamia inny wÄ…tek odpowiedzialny za GPS, ktÃ³ry to aktualizuje pozycjÄ™, po otrzymaniu dÅ‚ugoÅ›ci i szerokoÅ›ci, zostaje wysÅ‚any request do serwisu restowego o obliczenie adresu dokÅ‚adnej lokalizacji.
-  - WÄ…tek zapisujÄ…cy oczekuje na response z punktu powyÅ¼ej, 
-  - Zapis pliku png przez wÄ…tek zapisujÄ…cy z zaznaczonym znakiem, wykrytym limitem prÄ™dkoÅ›ci i adresem z geocode api. Do tego textToSpeech informuje nas w jÄ™zyku angielskim o zaistniaÅ‚ym zdarzeniu i wartoÅ›ci wykrytego limitu.
+  - Przycinanie obrazów rgb do tych samych koordynatów
+  - Binaryzacja koloru czarnego na wewnêtrznych okrêgach 
+  - Czyszczenie czarnych pixeli na krawêdziach 
+  - Wykrywanie przestrzeni z tylko jedn¹ liczb¹ - d¹¿ymy do uzyskania tylko 1 liczby na przestrzeñ 
+  - Porównywanie znalezionej liczby w bazie wzorców
+  - Jeœli liczba zostanie znaleziona, zwrócone zostaje ograniczenie jako string
+  - W¹tek zapisuj¹cy rezultat powiadamia inny w¹tek odpowiedzialny za GPS, który to aktualizuje pozycjê, po otrzymaniu d³ugoœci i szerokoœci, zostaje wys³any request do serwisu restowego o obliczenie adresu dok³adnej lokalizacji.
+  - W¹tek zapisuj¹cy oczekuje na response z punktu powy¿ej, 
+  - Zapis pliku png przez w¹tek zapisuj¹cy z zaznaczonym znakiem, wykrytym limitem prêdkoœci i adresem z geocode api. Do tego textToSpeech informuje nas w jêzyku angielskim o zaistnia³ym zdarzeniu i wartoœci wykrytego limitu.
   
-### Wykaz staÅ‚ych konfiguracyjnych 
+### Wykaz sta³ych konfiguracyjnych 
 
-**SAVE_BITMAP_STEPS** - pozwala na zapis plikÃ³w png kaÅ¼dego kroku algorytmu, od poczÄ…tkowych binaryzacji, poprzez operacje przyciÄ™cia, detekcji przestrzeni, krawÄ™dzi, wyciÄ…gania liczb z pola wewnÄ™trznego okrÄ™gu itp.
+**SAVE_BITMAP_STEPS** - pozwala na zapis plików png ka¿dego kroku algorytmu, od pocz¹tkowych binaryzacji, poprzez operacje przyciêcia, detekcji przestrzeni, krawêdzi, wyci¹gania liczb z pola wewnêtrznego okrêgu itp.
 
-**SAVE_RESULT** - pozwala na zapis wyniku - znalezionego znaku w formie "Found_" + typ ograniczenia (np 50) + formatowany adres uÅ¼ytkownika jako response z google api.
+**SAVE_RESULT** - pozwala na zapis wyniku - znalezionego znaku w formie "Found_" + typ ograniczenia (np 50) + formatowany adres u¿ytkownika jako response z google api.
 
-**MAX_WIDTH_IMG** - poniÅ¼sze 2 sÄ… intuicyjne 
+**MAX_WIDTH_IMG** - poni¿sze 2 s¹ intuicyjne 
 
 **MAX_HEIGHT_IMG** 
 
-#### Odpowiedzialne za gelokalizacje GPS i geokodowanie koordynatÃ³w na konkretny adres 
+#### Odpowiedzialne za gelokalizacje GPS i geokodowanie koordynatów na konkretny adres 
 
-**GPS_REFRESH_INTERVAL** - interwaÅ‚ odÅ›wieÅ¼ania pozycji GPS uÅ¼ytkownika
+**GPS_REFRESH_INTERVAL** - interwa³ odœwie¿ania pozycji GPS u¿ytkownika
 
-**GPS_REFRESH_CHANGE_DISTANCE_METERS** - jak nazwa wskazuje, listener bÄ™dzie zawoÅ‚any gdy pozycja zmieni siÄ™ o okreÅ›lonÄ… wartoÅ›Ä‡ w metrach
+**GPS_REFRESH_CHANGE_DISTANCE_METERS** - jak nazwa wskazuje, listener bêdzie zawo³any gdy pozycja zmieni siê o okreœlon¹ wartoœæ w metrach
 
 **GPS_GOOGLEMAPS_API** - klucz API
 
-**GPS_GEOCODDED_LOCATION_RESPONSES** - kolejka blokujÄ…ca wÄ…tki oczekujÄ…ce na aktualizacje poÅ‚oÅ¼enia uÅ¼ytkownika, response w postaci obiektu json z serwera api z formatowanym adresem
+**GPS_GEOCODDED_LOCATION_RESPONSES** - kolejka blokuj¹ca w¹tki oczekuj¹ce na aktualizacje po³o¿enia u¿ytkownika, response w postaci obiektu json z serwera api z formatowanym adresem
 
-**locationRequest** - chÄ™Ä‡ wysÅ‚ania requesta
+**locationRequest** - chêæ wys³ania requesta
 
-#### Dla wykrywania okrÄ™gÃ³w 
-**MIN_SIZE_CIRCLE_RADIUS** - najmniejszy promieÅ„ okrÄ™gu
+#### Dla wykrywania okrêgów 
+**MIN_SIZE_CIRCLE_RADIUS** - najmniejszy promieñ okrêgu
 
-**POINTS_ON_CIRCLE_AMOUNT** - iloÅ›Ä‡ punktÃ³w do obliczenia z okrÄ™gu
+**POINTS_ON_CIRCLE_AMOUNT** - iloœæ punktów do obliczenia z okrêgu
 
-**VALID_POINTS_ON_CIRCLE_AMOUNT** - poprawne, zaliczajÄ…ce siÄ™ do krawÄ™dzi
+**VALID_POINTS_ON_CIRCLE_AMOUNT** - poprawne, zaliczaj¹ce siê do krawêdzi
 
-**POINTS_ON_CIRCLE_DEGREES** = KÄ…ty punktÃ³w od Å›rodka
+**POINTS_ON_CIRCLE_DEGREES** = K¹ty punktów od œrodka
 
 **HSV_blackBinarization_TRESHOLD** 0-100 Value z HSV 0 - black
 
-#### Sprawdzanie wzorca liczby 0 - 100[%] 0 - img ten sam, 100 - caÅ‚kowicie inny
+#### Sprawdzanie wzorca liczby 0 - 100[%] 0 - img ten sam, 100 - ca³kowicie inny
 
-**INEQUALITY_PERCENTAGE** - poniÅ¼sze staÅ‚e sÄ… intuicyjne,
+**INEQUALITY_PERCENTAGE** - poni¿sze sta³e s¹ intuicyjne,
 
 **MIN_SIZE_AREA**
 
 **MAX_SIZE_AREA**
 
-**PATTERN_BASE** - baza wzorcÃ³w
+**PATTERN_BASE** - baza wzorców

@@ -7,14 +7,26 @@ import imgProcessing.representation.MyImage;
 import pl.agh.roadsigns.camera2detector.R;
 
 import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Config {
 
     public static final boolean SAVE_BITMAP_STEPS = false;
-    public static final boolean SAVE_RESULT = false;
+    public static final boolean SAVE_RESULT = true;
 
     public static final int MAX_WIDTH_IMG = 1920;
     public static final int MAX_HEIGHT_IMG = 1080;
+
+    //GPS COORDINATES AND GEOCODE
+    public static final long GPS_REFRESH_INTERVAL = 1000; // in miliseconds
+    public static final long GPS_REFRESH_CHANGE_DISTANCE_METERS = 0; // listener will be called if changed by value meters
+
+    public static final String GPS_GOOGLEMAPS_API = "";
+
+    public static final BlockingQueue<String> GPS_GEOCODDED_LOCATION_RESPONSES = new LinkedBlockingDeque<>(1);
+
+    public static volatile boolean locationRequest = false;
 
     /* For Circle detection */
     public static final int MIN_SIZE_CIRCLE_RADIUS = 40;
@@ -24,7 +36,6 @@ public class Config {
     public static final int[] POINTS_ON_CIRCLE_DEGREES = new int[POINTS_ON_CIRCLE_AMOUNT];
 
     public static final int HSV_blackBinarization_TRESHOLD = 22;  //0-100 Value from HSV 0 -black
-
 
     /* For Pattern checking 0 - 100[%] 0 - img is the same, 100 - is completely different*/
     public static final int INEQUALITY_PERCENTAGE = 25;
@@ -72,7 +83,6 @@ public class Config {
     }
 
     static{
-
 
         double degreeRange = 360/POINTS_ON_CIRCLE_AMOUNT;
         for(int i = 0; i < POINTS_ON_CIRCLE_AMOUNT; i++){

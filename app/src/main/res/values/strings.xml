@@ -4,4 +4,7 @@
     <string name="photoDetButton">Take still image to detect button</string>
     <string name="textViewPrevRes">Prints chosen preview resolution</string>
     <string name="settingsButton">Runs popup menu</string>
+    <string name="coordinates">Coordinates: </string>
+    <string name="coordinatesDesc">User position coordinates</string>
+
 </resources>

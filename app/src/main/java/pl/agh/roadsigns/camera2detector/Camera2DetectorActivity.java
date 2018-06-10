@@ -2,6 +2,7 @@ package pl.agh.roadsigns.camera2detector;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -17,6 +18,9 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaPlayer;
@@ -24,6 +28,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -42,6 +47,15 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -69,23 +83,38 @@ public class Camera2DetectorActivity extends AppCompatActivity {
     private  static final int STATE_PREVIEW = 0;
     private  static final int STATE_WAIT_LOCK = 1;
     private int mCaptureState = STATE_PREVIEW;
+
+    private RequestQueue locationRequestQueue;
+    private boolean initLocation = true;
+    private volatile String userAddress;
+
     private TextToSpeech toSpeech;
+    private int langTextToSpeechResult;
+
     private MediaPlayer circleDetectedSoun;
     private MediaPlayer redAreaDetectedSoun;
-    private int langTextToSpeechResult;
+
     private TextView mTextViewPrevRes;
+    private TextView mTextViewCoordinates;
+
+    private LocationManager locationManager;
+    private LocationListener locationListener;
+
     private ImageButton btnSettings;
     private ImageButton btnShotPhoto;
     private ImageButton btnDetector;
+
     private static List<Size> previewResolutions = new ArrayList<Size>();
     private static boolean isAcitve = false;
     private static boolean isDetectorActive = false;
+
     private TextureView mTextureView;
     private TextureView.SurfaceTextureListener mSurfaceTextureListeenr = new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
 
-            toSpeech.speak("My TextureVIew is available with resolution " + width + " width and " + height +" height", TextToSpeech.QUEUE_ADD,null,null);
+            //toSpeech.speak("My TextureVIew is available with resolution " + width + " width and " + height +" height", TextToSpeech.QUEUE_ADD,null,null);
+            toSpeech.speak("Hello, my TextureVIew is available", TextToSpeech.QUEUE_ADD,null,null);
             Toast.makeText(getApplicationContext(), "TextureVIew is available width:" + width + " height:" + height, Toast.LENGTH_LONG).show();
             setupCamera(width, height);
             connectToCamera();
@@ -148,13 +177,9 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         @Override
         public void onImageAvailable(ImageReader reader) {
             starts++;
-
             if(((starts%2)==0)&&(!isAcitve)) {
                 mBackgroundHandlerFirst.post(new ImageSaver(1, reader.acquireLatestImage()));
             }
-
-
-
         }
     };
 
@@ -170,8 +195,7 @@ public class Camera2DetectorActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            System.out.println("Action");
-
+            //System.out.println("Action");
             isAcitve = true;
             if(mImage!=null){
                 ByteBuffer byteBuffer = mImage.getPlanes()[0].getBuffer();
@@ -194,8 +218,6 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 isAcitve = false;
             }
             isAcitve = false;
-
-
         }
     }
     private int mTotalRotation;
@@ -257,7 +279,12 @@ public class Camera2DetectorActivity extends AppCompatActivity {
 
         Config.prepare(getApplicationContext().getResources());
 
+        checkWriteStoragePermission();
+
+        this.locationRequestQueue = Volley.newRequestQueue(this);
+
         this.circleDetectedSoun = MediaPlayer.create(this,R.raw.bleep);
+
         this.redAreaDetectedSoun = MediaPlayer.create(this, R.raw.circle_detected);
 
         this.toSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
@@ -274,6 +301,64 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         this.mTextureView = (TextureView) findViewById(R.id.textureView);
 
         this.mTextViewPrevRes = (TextView) findViewById(R.id.textViewPrevRes);
+
+        this.mTextViewCoordinates = (TextView) findViewById(R.id.coordinates);
+
+        this.locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        this.locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+
+                mTextViewCoordinates.setText("Coordinates: long: " + location.getLongitude() + "  lat: " + location.getLatitude() + "\n "+ userAddress);
+
+                if(initLocation || Config.locationRequest){
+                    String url = "https://maps.googleapis.com/maps/api/geocode/json?" +
+                            "latlng=" + location.getLatitude() + "," + location.getLongitude() +"&key="+Config.GPS_GOOGLEMAPS_API;
+
+                    JsonObjectRequest request = new JsonObjectRequest(url,
+                            new Response.Listener<JSONObject>() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+
+                                    try {
+                                        userAddress = response.getJSONArray("results").getJSONObject(0).getString("formatted_address");
+                                        Config.GPS_GEOCODDED_LOCATION_RESPONSES.add(userAddress);
+                                        //System.out.println(userAddress);
+                                        Config.locationRequest = false;
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            },
+                            new Response.ErrorListener() {
+                                @Override
+                                public void onErrorResponse(VolleyError error) {
+                                    Toast.makeText(getApplicationContext(), "Error with geocode api "+error.networkResponse.statusCode,Toast.LENGTH_LONG).show();
+                                }
+                            });
+                    locationRequestQueue.add(request);
+                    initLocation = false;
+                }
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+                Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(i);
+            }
+        };
+
+        setupGPS();
 
         this.btnSettings = (ImageButton) findViewById(R.id.settingsButton);
 
@@ -302,8 +387,6 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                         return true;
                     }
                 });
-
-
                 popupMenu.show();
             }
         });
@@ -312,7 +395,12 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         this.btnShotPhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                checkWriteStoragePermission();
+
+                if(isDetectorActive) {
+                    toSpeech.speak("Detector was deactivated", TextToSpeech.QUEUE_ADD, null, null);
+                    isDetectorActive = !isDetectorActive;
+                }
+                toSpeech.speak("Shoot on demand!", TextToSpeech.QUEUE_ADD, null, null);
                 lockFocus();
             }
         });
@@ -330,6 +418,18 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 isDetectorActive = !isDetectorActive;
             }
         });
+    }
+    private void setupGPS(){
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.INTERNET}
+                        ,10);
+            }
+            return;
+        }
+        this.locationManager.requestLocationUpdates("gps",Config.GPS_REFRESH_INTERVAL,Config.GPS_REFRESH_CHANGE_DISTANCE_METERS, locationListener);
+        toSpeech.speak("GPS was configured", TextToSpeech.QUEUE_ADD,null,null);
     }
 
     @Override
@@ -392,8 +492,6 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 this.mImageSize = chooseOoptimalSize(map.getOutputSizes(ImageFormat.JPEG), rotatedWidth, rotatedHeight);
                 this.mImageReade = ImageReader.newInstance(this.mImageSize.getWidth(), this.mImageSize.getHeight(), ImageFormat.JPEG, 2);
                 this.mImageReade.setOnImageAvailableListener(this.mOnImageAvailableListener1, mBackgroundHandlerFirst);
-               // this.mImageReade.setOnImageAvailableListener(this.mOnImageAvailableListener2, mBackgroundHandlerSecond);
-
 
                 this.mTextViewPrevRes.setText("preview resolution: "+ this.mPreviewSize);
                 this.mCameraID = cameraId;
@@ -486,6 +584,9 @@ public class Camera2DetectorActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),  "Application needs camera services!", Toast.LENGTH_SHORT).show();
             }
         }
+        if(requestCode == 10){
+            setupGPS();
+        }
     }
 
     //free camera resources
@@ -525,19 +626,11 @@ public class Camera2DetectorActivity extends AppCompatActivity {
         //traverse through resolutions
         for(Size option : choices) {
             previewResolutions.add(option);
-            //if((option.getHeight() == option.getWidth() * height / width) && option.getWidth() >= width && option.getHeight() >= height){
             bigEnough.add(option);
-            if(option.getWidth() == 720)
+            if(option.getWidth() == 720)  // taking 720x480
                 return option;
         }
         return choices[0];
-//        }
-        /*
-        if(bigEnough.size() > 0){
-            return Collections.min(bigEnough, new CompareSizeByArea());
-        }else{
-            return choices[0];
-        }*/
     }
 
     private void lockFocus(){
@@ -574,15 +667,10 @@ public class Camera2DetectorActivity extends AppCompatActivity {
 
             }else{
                 if(shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)){
-                    Toast.makeText(this, "app needs perms to save vids", Toast.LENGTH_LONG);
+                    Toast.makeText(this, "app needs perms to save pics", Toast.LENGTH_LONG);
                 }
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},REQUEST_WRITE_EXTERNAL_STORAGE_PERMISSION_RESULT);
             }
-
-        }else {
-
-
         }
     }
-
 }

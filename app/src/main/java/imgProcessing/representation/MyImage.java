@@ -1,16 +1,11 @@
 package imgProcessing.representation;
 
 import imgProcessing.basic.Circle;
-import pl.agh.roadsigns.camera2detector.R;
 
-import android.app.Activity;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.speech.tts.TextToSpeech;
-
-import java.io.File;
-import java.io.InputStream;
 
 public class MyImage {
 
@@ -85,11 +80,7 @@ public class MyImage {
         this.pixels = new int[this.totalPixels];
 
         this.image = bi;
-        //this.image.getPixels();
 
-       // g2d.
-       // g2d.(bi, 0, 0, null);
-      //  g2d.dispose();
         initPixelArray();
     }
 
@@ -113,15 +104,7 @@ public class MyImage {
 
         image = BitmapFactory.decodeResource(res, id,options);
 
-
-
-   //     String fileType = image.get
-
-    //    if("jpg".equals(fileType)){
-    //        imgType = ImageType.JPG;
-     //   }else{
-            imgType = ImageType.PNG;
-    //    }
+        imgType = ImageType.PNG;
 
         this.width = image.getWidth();
         this.height = image.getHeight();
@@ -133,17 +116,6 @@ public class MyImage {
         initPixelArray();
     }
 
-/*
-    public void writeImage(String filePath){
-        try{
-            File f = new File(filePath);
-            String fileType = filePath.substring(filePath.lastIndexOf('.')+1);
-            ImageIO.write(image, fileType, f);
-        }catch(IOException e){
-            System.out.println("Error Occurred!\n"+e);
-        }
-    }
-*/
     public boolean isEqual(MyImage img, double inequalityPercentage){
 
         //check dimension

@@ -5,8 +5,6 @@ import imgProcessing.representation.MyImage;
 
 public class PatternChecker {
 
-
-
     static public String recognisePattern(MyImage img){
 
         for(int i = 0; i < Config.PATTERN_BASE.length ; i++){

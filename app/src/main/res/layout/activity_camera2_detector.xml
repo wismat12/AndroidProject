@@ -66,4 +66,16 @@
         android:contentDescription="@string/settingsButton"
         app:srcCompat="@drawable/btn_settings" />
 
+    <TextView
+        android:id="@+id/coordinates"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/textViewPrevRes"
+        android:text="@string/coordinates"
+        android:contentDescription="@string/coordinatesDesc"
+        android:textColor="@android:color/holo_red_dark"
+        android:textStyle="italic"
+        tools:shadowColor="@android:color/darker_gray" />
+
 </RelativeLayout>

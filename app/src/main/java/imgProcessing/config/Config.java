@@ -38,7 +38,7 @@ public class Config {
     public static final int HSV_blackBinarization_TRESHOLD = 22;  //0-100 Value from HSV 0 -black
 
     /* For Pattern checking 0 - 100[%] 0 - img is the same, 100 - is completely different*/
-    public static final int INEQUALITY_PERCENTAGE = 25;
+    public static final int INEQUALITY_PERCENTAGE = 22;
 
     public static final int MIN_SIZE_AREA = 82;
 

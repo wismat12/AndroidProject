@@ -9,12 +9,11 @@ import android.speech.tts.TextToSpeech;
 
 public class MyImage {
 
+    //left upper corner pos x before cropping
     private int oldX;
 
+    //left upper corner pos y before cropping
     private int oldY;
-
-    /** Store the MyImage reference */
-    //private BufferedImage image;
 
     private Bitmap image;
 
@@ -62,15 +61,6 @@ public class MyImage {
             this.image = img.getImage().copy(Bitmap.Config.RGB_565, true);
         }
         initPixelArray();
-        /*
-        //copy original image pixels value to new image and pixels array
-        for(int y = 0; y < this.height; y++){
-            for(int x = 0; x < this.width; x++){
-                this.image.setPixel(x, y, img.getPixel(x, y));
-                this.pixels[x+y*this.width] = img.getPixel(x, y);
-            }
-        }
-        */
     }
 
     public void modifyImageObject(int width, int height, Bitmap bi){
@@ -330,93 +320,6 @@ public class MyImage {
         double V = max/255.0;
 
         return V * 100;
-    }
-
-    /**
-     * This method will set the hue of the pixel (x,y).
-     *
-     * @param x The x coordinate of the pixel.
-     * @param y The y coordinate of the pixel.
-     * @param hue The hue value that is set [0-360] in degree.
-     */
-    public void HSV_setHue(int x, int y, double hue){
-        int rgb[] = HSV_getRGBFromHSV(hue, HSV_getSaturation(x,y), HSV_getValue(x,y));
-        setPixel(x, y, getAlpha(x,y), rgb[0], rgb[1], rgb[2]);
-    }
-
-    /**
-     * This method will set the saturation of the pixel (x,y).
-     *
-     * @param x The x coordinate of the pixel.
-     * @param y The y coordinate of the pixel.
-     * @param saturation The saturation value that is set [0-1].
-     */
-    public void HSV_setSaturation(int x, int y, double saturation){
-        int rgb[] = HSV_getRGBFromHSV(HSV_getHue(x,y), saturation, HSV_getValue(x,y));
-        setPixel(x, y, getAlpha(x,y), rgb[0], rgb[1], rgb[2]);
-    }
-
-    /**
-     * This method will set the value of the pixel (x,y).
-     *
-     * @param x The x coordinate of the pixel.
-     * @param y The y coordinate of the pixel.
-     * @param value The value that is set [0-1].
-     */
-    public void HSV_setValue(int x, int y, double value){
-        int rgb[] = HSV_getRGBFromHSV(HSV_getHue(x,y), HSV_getSaturation(x,y), value);
-        setPixel(x, y, getAlpha(x,y), rgb[0], rgb[1], rgb[2]);
-    }
-
-    /**
-     * This method will return the RGB value from HSV value.
-     *
-     * @param H Hue of the pixel.
-     * @param S Saturation of the pixel.
-     * @param V Value of the pixel.
-     * @return The rgb value for the corresponding HSV value.
-     */
-    private int[] HSV_getRGBFromHSV(double H, double S, double V){
-        int rgb[] = new int[3];
-        int r = 0, g = 0, b = 0;
-
-        double max = 255.0*V;
-        double min = max*(1-S);
-        double tmp = (max-min)*(1 - Math.abs((H/60)%2 - 1));
-
-        H %= 360;
-
-        if(H < 60){
-            r = (int)Math.round(max);
-            g = (int)Math.round(tmp+min);
-            b = (int)Math.round(min);
-        }else if(H < 120){
-            r = (int)Math.round(tmp+min);
-            g = (int)Math.round(max);
-            b = (int)Math.round(min);
-        }else if(H < 180){
-            r = (int)Math.round(min);
-            g = (int)Math.round(max);
-            b = (int)Math.round(tmp+min);
-        }else if(H < 240){
-            r = (int)Math.round(min);
-            g = (int)Math.round(tmp+min);
-            b = (int)Math.round(max);
-        }else if(H < 300){
-            r = (int)Math.round(tmp+min);
-            g = (int)Math.round(min);
-            b = (int)Math.round(max);
-        }else if(H < 360){
-            r = (int)Math.round(max);
-            g = (int)Math.round(min);
-            b = (int)Math.round(tmp+min);
-        }
-
-        rgb[0]=r;
-        rgb[1]=g;
-        rgb[2]=b;
-
-        return rgb;
     }
 
     public int getOldX() {

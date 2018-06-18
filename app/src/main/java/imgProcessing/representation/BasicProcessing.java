@@ -158,19 +158,8 @@ public class BasicProcessing {
      */
     public static void HSV_blackBinarization(MyImage img, int threshold){
 
-/*
-        double sum = 0;
-        for(int y = 0; y < img.getImageHeight(); y++) {
-            for (int x = 0; x < img.getImageWidth(); x++) {
-                sum += img.HSV_getValue(x, y);
-            }
-        }
-        sum/=img.getImageTotalPixels();
-*/
         for(int y = 0; y < img.getImageHeight(); y++){
             for(int x = 0; x < img.getImageWidth(); x++){
-
-                //img.HSV_setSaturation(x,y,1);
 
                 int a = img.getAlpha(x, y);
                 int v = (int)((img.HSV_getValue(x, y)));
